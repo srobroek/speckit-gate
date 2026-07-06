@@ -1,0 +1,19 @@
+# speckit-gate advisory extension
+# TODO-verify: Validate this extension.yml shape against your installed spec-kit
+# version with `specify extension info speckit-gate-advisory` after installation.
+# The fields below follow the spec-kit community extension documentation.
+
+id: speckit-gate-advisory
+name: speckit-gate-advisory
+version: "0.1.0"
+description: >-
+  Advisory workflow gates for spec-kit. Injects prerequisite context
+  before each spec-kit command via before_* hooks. Works on every
+  harness — no native hook system required.
+author: srobroek
+category: process
+effect: read-only
+commands:
+  - name: speckit.gate.init
+    description: Initialise gates.yaml for this project
+    file: commands/gate-init.md

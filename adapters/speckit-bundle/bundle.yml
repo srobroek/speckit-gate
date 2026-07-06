@@ -1,0 +1,34 @@
+# speckit-gate bundle manifest
+# spec-kit bundle format: https://github.com/github/spec-kit/blob/main/docs/reference/bundles.md
+#
+# This bundle delivers advisory gates via spec-kit's before_* hook system.
+# It is the ONLY distribution path that reaches harnesses with no native hook
+# system (Cursor, Copilot, Gemini, Zed, Amp, Auggie, etc.) — all of which
+# receive advisory prompt-injection gates via spec-kit's built-in command wiring.
+#
+# TODO-verify: The exact bundle.yml schema fields below follow the spec-kit bundle
+# documentation.  Run `specify bundle validate` in a spec-kit project to confirm
+# the manifest parses correctly against your installed spec-kit version.
+#
+# For harnesses with real hook enforcement (deny/allow), prefer the Claude plugin
+# or Codex adapter instead — this bundle provides advisory-only gates.
+
+id: speckit-gate
+name: speckit-gate
+version: "0.1.0"
+description: >-
+  Advisory workflow gates for spec-kit. Adds /speckit.gate.init and
+  before_* context injection for all harnesses that lack native hook
+  systems (Cursor, Copilot, Gemini, Zed, Amp, Auggie, Cline, Trae,
+  ZCode, Kimi, Lingma, Trae, Goose, and 20+ others).
+author: srobroek
+license: Apache-2.0
+repository: https://github.com/srobroek/speckit-gate
+tags: [gates, workflow, advisory]
+
+# Components installed by this bundle
+extensions:
+  - id: speckit-gate-advisory
+    path: ./extension
+
+# No presets or workflows: advisory gates ship as an extension only.

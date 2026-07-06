@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "matcher": "speckit.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx speckit-gate dispatch pre",
+            "timeout": 5,
+            "statusMessage": "Checking spec-kit gate preconditions..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx speckit-gate dispatch pre",
+            "timeout": 5,
+            "statusMessage": "Checking spec-kit gate preconditions (Skill)..."
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx speckit-gate dispatch pre",
+            "timeout": 5,
+            "statusMessage": "Checking spec-kit gate preconditions (Agent spawn)..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx speckit-gate dispatch post",
+            "timeout": 5,
+            "statusMessage": "Loading spec-kit next-step context..."
+          }
+        ]
+      }
+    ]
+  }
+}
