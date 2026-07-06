@@ -95,26 +95,28 @@ For no-agent setup run `speckit-gate init --interactive` or
 
 ## Harness enforcement matrix
 
-| Harness | Install path | Enforcement |
-|---------|-------------|-------------|
-| Claude Code (`claude`) | Plugin or `install --harness claude` | **deny** (PreToolUse:Skill + PreToolUse:Agent + UserPromptExpansion) |
-| Codex CLI (`codex`) | `install --harness codex` | **deny** (UserPromptSubmit + PreToolUse) |
-| Cursor (`cursor-agent`) | spec-kit bundle | advisory |
-| GitHub Copilot (`copilot`) | spec-kit bundle | advisory |
-| Gemini CLI (`gemini`) | spec-kit bundle | advisory |
-| Zed (`zed`) | spec-kit bundle | advisory |
-| Amp (`amp`) | spec-kit bundle | advisory |
-| Augment (`auggie`) | spec-kit bundle | advisory |
-| Cline (`cline`) | spec-kit bundle | advisory |
-| Trae (`trae`) | spec-kit bundle | advisory |
-| ZCode (`zcode`) | spec-kit bundle | advisory |
-| Kimi Code (`kimi`) | spec-kit bundle | advisory |
-| Firebender (`firebender`) | spec-kit bundle | advisory |
-| Goose (`goose`) | spec-kit bundle | advisory |
-| Devin (`devin`) | spec-kit bundle | advisory |
-| Junie (`junie`) | spec-kit bundle | advisory |
-| Lingma (`lingma`) | spec-kit bundle | advisory |
-| All other spec-kit harnesses | spec-kit bundle | advisory |
+A gate is only as strong as its blindest channel, and every harness differs by
+**invocation channel**: what happens when the *user* types a command vs. when
+the *model* (a workflow engine, a subagent) evokes one mid-run. A gate that
+covers only the user channel is silently bypassed by agent-driven runs — so the
+matrix is per-channel. All deny rows below are verified against harness source
+(mid-2026); adapters currently ship for Claude Code and Codex.
+
+| Harness | User invocation | Model/agent evocation | Adapter |
+|---------|-----------------|----------------------|---------|
+| Claude Code | **deny** — `UserPromptExpansion`, sees command name | **deny** — `PreToolUse: Skill\|Agent` | shipped |
+| Qwen Code | **deny** — `UserPromptExpansion`, sees `command_name` (+ `UserPromptSubmit` post-expansion) | **deny** — `PreToolUse` on `skill`/`agent` tools (full prompt); model-invoked commands re-fire `UserPromptExpansion`. `SubagentStart` cannot block | planned |
+| Codex CLI | **deny** — `UserPromptSubmit` (raw human text; text-match, no command structure; requires `[features] hooks = true`) | **none** — skills inject as context with no event; `SubagentStart` is metadata-only (`continue:false` at best). Artifact gates are the backstop | shipped |
+| Gemini CLI | **deny** — `BeforeAgent` (expanded template text only — no command name, no slash-origin marker; content-match required) | **n/a** — model cannot invoke `.toml` commands by design | planned |
+| Mistral Vibe | **none** — slash/skill input expands in the UI layer, invisible to hooks | **deny** — `before_tool` on the `skill` tool (sees skill name; flag: `enable_experimental_hooks`). Note: skill loads bypass Vibe's user-approval prompt, so this hook is the only programmatic gate | planned |
+| Amp | observe-only — `agent.start` sees prompt text but cannot block | **deny** — `tool.call` verdicts on subagent/delegation tools (skill-load visibility unverified). Note: spec-kit ≤0.12.4 renders Amp commands to `.agents/commands/`, removed by Amp 2026-01 — its Amp integration is currently broken upstream | — |
+| GitHub Copilot | hooks exist; deny semantics unverified | unverified | — |
+| Cursor, Zed, Cline, Goose, Devin, Trae, Lingma, Kimi, ZCode, Firebender, Junie, Auggie, + ~14 more | static context only — no hook system | static context only | spec-kit bundle (advisory text) |
+
+Where a channel shows **none**/static, enforcement falls back to **artifact
+gates**: a downstream gated command hard-requires the report file the skipped
+step should have produced, so out-of-order runs still fail at the next
+enforceable point.
 
 **deny** = the hook emits `permissionDecision: deny` or `decision: block`,
 preventing the tool from running.
