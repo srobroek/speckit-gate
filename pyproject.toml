@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "speckit-gate"
+version = "0.1.0"
+description = "Generated, harness-agnostic workflow gates for spec-kit projects"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+speckit-gate = "speckit_gate.cli:main"
+
+[project.urls]
+Repository = "https://github.com/srobroek/speckit-gate"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/speckit_gate"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
