@@ -1,0 +1,35 @@
+# Test fixture gates.yaml — used by golden compile tests
+config:
+  prefix: speckit.
+  feature_root: specs
+  resolve: [git-branch, newest-dir]
+  messages:
+    no_feature: No feature active. Run /speckit.specify first.
+
+gates:
+  specify:
+    requires: []
+    produces: [specs/<feat>/spec.md]
+    context: Initial spec authoring.
+
+  plan:
+    requires: [specify]
+    produces: [specs/<feat>/plan.md]
+    context: Decompose spec into plan.
+
+  tasks:
+    requires: [plan]
+    produces: [specs/<feat>/tasks.md]
+    context: Decompose plan into tasks.
+
+  verify:
+    requires: [plan]
+    produces: [specs/<feat>/verify-report.md]
+    spawn_agent: true
+    context: Validate implementation against plan.
+
+  implement:
+    requires: [tasks]
+    produces: []
+    deprecated: true
+    context: Deprecated. Use agent-assign flow.
