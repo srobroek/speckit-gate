@@ -1,0 +1,40 @@
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Use a PAT so the release PR triggers required checks.
+          # Create a fine-grained token with Contents + Pull Requests write
+          # permissions and store it as a repo secret named RELEASE_PLEASE_TOKEN.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      # Optional: build and attach wheel to GitHub release when one is created.
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
+
+      - name: Install uv
+        if: ${{ steps.release.outputs.release_created }}
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build wheel
+        if: ${{ steps.release.outputs.release_created }}
+        run: uv build
+
+      - name: Upload wheel to GitHub release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          gh release upload ${{ steps.release.outputs.tag_name }} dist/*.whl dist/*.tar.gz

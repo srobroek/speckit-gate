@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run tests
+        run: uv run pytest tests/ -v
+
+      - name: Compile core preset (check)
+        run: |
+          uv run speckit-gate compile \
+            --gates-yaml presets/core.gates.yaml \
+            --root /tmp/core-check || true
+          uv run python -c "
+          from speckit_gate.compile import compile_gates
+          nodes, cfg, warns = compile_gates('presets/core.gates.yaml')
+          print(f'core preset: {len(nodes)} gates, {len(warns)} warnings')
+          assert len(nodes) > 0
+          "
+
+      - name: Compile srobroek-full preset (check)
+        run: |
+          uv run python -c "
+          from speckit_gate.compile import compile_gates
+          nodes, cfg, warns = compile_gates('presets/srobroek-full.gates.yaml')
+          print(f'srobroek-full preset: {len(nodes)} gates, {len(warns)} warnings')
+          assert len(nodes) >= 28, f'expected >=28 nodes, got {len(nodes)}'
+          "
