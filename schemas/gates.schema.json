@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/srobroek/speckit-gate/schemas/gates.schema.json",
+  "title": "gates.yaml schema",
+  "description": "Schema for speckit-gate gates.yaml configuration files.",
+  "type": "object",
+  "required": ["gates"],
+  "additionalProperties": false,
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "description": "Command prefix to strip when matching. Default: 'speckit.'",
+          "default": "speckit."
+        },
+        "feature_root": {
+          "type": "string",
+          "description": "Root directory for feature artefacts. Default: 'specs'",
+          "default": "specs"
+        },
+        "resolve": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["git-branch", "newest-dir", "env-var", "feature-json"]
+          },
+          "description": "Feature resolution strategies in priority order.",
+          "default": ["git-branch", "newest-dir"]
+        },
+        "messages": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "no_feature": {
+              "type": "string",
+              "description": "Block reason when no feature can be resolved."
+            }
+          }
+        }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "description": "Map of command name to gate definition.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/definitions/gate"
+      }
+    }
+  },
+  "definitions": {
+    "gate": {
+      "type": "object",
+      "description": "Gate definition for a single spec-kit command.",
+      "additionalProperties": false,
+      "properties": {
+        "requires": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Prerequisite commands or artefact paths.",
+          "default": []
+        },
+        "produces": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Artefacts produced by this command.",
+          "default": []
+        },
+        "deprecated": {
+          "type": "boolean",
+          "description": "If true, this command is always blocked with a deprecation message.",
+          "default": false
+        },
+        "spawn_agent": {
+          "type": "boolean",
+          "description": "If true, a PreToolUse:Agent gate is registered (Claude Code only). Harnesses lacking Agent events skip this gate with a compile-time warning.",
+          "default": false
+        },
+        "context": {
+          "type": "string",
+          "description": "Advisory context text injected into the model alongside the gate result."
+        }
+      }
+    }
+  }
+}
