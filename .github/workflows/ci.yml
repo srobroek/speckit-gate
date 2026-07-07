@@ -41,11 +41,3 @@ jobs:
           assert len(nodes) > 0
           "
 
-      - name: Compile srobroek-full preset (check)
-        run: |
-          uv run python -c "
-          from speckit_gate.compile import compile_gates
-          nodes, cfg, warns = compile_gates('presets/srobroek-full.gates.yaml')
-          print(f'srobroek-full preset: {len(nodes)} gates, {len(warns)} warnings')
-          assert len(nodes) >= 28, f'expected >=28 nodes, got {len(nodes)}'
-          "

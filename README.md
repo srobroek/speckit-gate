@@ -182,7 +182,6 @@ gates:
 | Preset | Description |
 |--------|-------------|
 | `presets/core.gates.yaml` | All spec-kit built-in commands |
-| `presets/srobroek-full.gates.yaml` | Full 28-node DAG with agent-assign extension and spawn_agent gates |
 
 Copy a preset as your starting `gates.yaml`:
 
