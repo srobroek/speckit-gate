@@ -37,17 +37,18 @@ def test_load_adapter_hooks_unknown_returns_none():
     assert result is None
 
 
-def test_claude_adapter_has_no_UserPromptExpansion():
-    """UserPromptExpansion is not a standard Claude Code event — must not appear."""
+def test_claude_adapter_has_no_UserPromptSubmit():
+    """UserPromptSubmit fires on every prompt — too broad; UserPromptExpansion is correct."""
     data = _load_adapter_hooks("claude")
-    assert "UserPromptExpansion" not in data["hooks"], (
-        "Claude adapter must use UserPromptSubmit, not UserPromptExpansion"
+    assert "UserPromptSubmit" not in data["hooks"], (
+        "Claude adapter must use UserPromptExpansion, not UserPromptSubmit"
     )
 
 
-def test_claude_adapter_has_UserPromptSubmit():
+def test_claude_adapter_has_UserPromptExpansion():
+    """UserPromptExpansion fires only on speckit.* command expansions — precise gate."""
     data = _load_adapter_hooks("claude")
-    assert "UserPromptSubmit" in data["hooks"]
+    assert "UserPromptExpansion" in data["hooks"]
 
 
 def test_adapter_hooks_contain_template_placeholder():
@@ -98,7 +99,7 @@ def test_install_claude_creates_settings_json_fresh(tmp_path):
     assert settings_path.exists()
     settings = json.loads(settings_path.read_text())
     assert "hooks" in settings
-    assert "UserPromptSubmit" in settings["hooks"]
+    assert "UserPromptExpansion" in settings["hooks"]
 
 
 def test_install_claude_does_not_write_hooks_json(tmp_path):
@@ -140,7 +141,7 @@ def test_install_claude_merges_into_existing_settings(tmp_path):
         e.get("matcher") == "Bash" for e in pre
     ), "Existing PreToolUse:Bash entry must be preserved"
     # New entries added
-    assert "UserPromptSubmit" in settings["hooks"]
+    assert "UserPromptExpansion" in settings["hooks"]
 
 
 def test_install_claude_no_duplicate_on_second_install(tmp_path):
