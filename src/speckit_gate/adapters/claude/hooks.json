@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "speckit.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
+            "timeout": 5,
+            "statusMessage": "Checking spec-kit gate preconditions..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
+            "timeout": 5,
+            "statusMessage": "Checking spec-kit gate preconditions (Skill)..."
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
+            "timeout": 5,
+            "statusMessage": "Checking spec-kit gate preconditions (Agent spawn)..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{SPECKIT_GATE_CMD} dispatch post",
+            "timeout": 5,
+            "statusMessage": "Loading spec-kit next-step context..."
+          }
+        ]
+      }
+    ]
+  }
+}
