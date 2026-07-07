@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.2](https://github.com/srobroek/speckit-gate/compare/speckit-gate-v0.2.1...speckit-gate-v0.2.2) (2026-07-07)
+
+
+### Features
+
+* **cli:** aligned propose table for terminal; --format md for piping ([51e6bbe](https://github.com/srobroek/speckit-gate/commit/51e6bbe327f64f39c54cd89c9c8220e717e89d98))
+
+
+### Bug Fixes
+
+* **cli:** dry-run error messages; next-step guidance after init/compile ([4e5a04e](https://github.com/srobroek/speckit-gate/commit/4e5a04e567d8f64cb8069b712de28bd154911d70))
+* **hooks:** restore UserPromptExpansion as the user-channel gate ([b082889](https://github.com/srobroek/speckit-gate/commit/b08288944342c1a9ac026f0eaf702b82fc940b8d))
+
+
+### Performance Improvements
+
+* **dispatch:** fast-path exit for non-speckit events; TTY stdin guard ([2fddcc3](https://github.com/srobroek/speckit-gate/commit/2fddcc3ee0482345a6a66aaaa6daf1876e3f384c))
+
 ## [0.2.1](https://github.com/srobroek/speckit-gate/compare/speckit-gate-v0.2.0...speckit-gate-v0.2.1) (2026-07-07)
 
 
