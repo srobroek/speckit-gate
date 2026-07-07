@@ -39,3 +39,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           gh release upload ${{ steps.release.outputs.tag_name }} dist/*.whl dist/*.tar.gz
+
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+
+  # PyPI via Trusted Publishing (OIDC) — register this repo+workflow+environment
+  # as a pending publisher at pypi.org before the first release lands.
+  publish-pypi:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
