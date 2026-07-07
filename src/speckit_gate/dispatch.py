@@ -220,10 +220,62 @@ def render_body(phase: str, node: dict, node_id: str = "") -> str:
 # ---------------------------------------------------------------------------
 # Main dispatch loop
 # ---------------------------------------------------------------------------
+
+# Hardcoded fast-path prefix — used BEFORE nodes.json is loaded so we can
+# bail out cheaply on every non-speckit Skill/Agent invocation.
+_FAST_PATH_PREFIX = "speckit"
+
+
+def _fast_path_exit(event: str, payload: dict) -> bool:
+    """Return True when this event can be silently skipped without loading nodes.
+
+    Checks the raw payload fields for Skill/Agent/UserPromptExpansion events
+    before any file I/O.  UserPromptSubmit is not used in the Claude adapter;
+    UserPromptExpansion carries command_name and fires only on speckit.* commands
+    (the matcher handles it) — but we add a belt-and-braces check here too.
+    """
+    if event == "UserPromptExpansion":
+        cmd_name = payload.get("command_name")
+        if isinstance(cmd_name, str) and cmd_name:
+            return not cmd_name.startswith(_FAST_PATH_PREFIX)
+        return False  # no command_name — let full path handle it
+
+    if event not in ("PreToolUse", "PostToolUse"):
+        return False
+    tool_input = payload.get("tool_input")
+    if not isinstance(tool_input, dict):
+        # No tool_input or not a dict — no speckit skill here
+        return True
+    # Agent spawn events
+    for key in ("subagent_type", "agent_type", "agentType"):
+        val = tool_input.get(key)
+        if isinstance(val, str) and val:
+            return not val.startswith(_FAST_PATH_PREFIX)
+    # Skill invocation
+    skill = tool_input.get("skill")
+    if isinstance(skill, str) and skill:
+        return not skill.startswith(_FAST_PATH_PREFIX)
+    cmd_name = tool_input.get("command_name")
+    if isinstance(cmd_name, str) and cmd_name:
+        return not cmd_name.startswith(_FAST_PATH_PREFIX)
+    # Nothing recognised — skip
+    return True
+
+
 def dispatch(phase: str, nodes_path: str | None = None) -> int:
     """Read JSON payload from stdin, emit hook response to stdout.
     Returns 0 always.
     """
+    # When stdin is a terminal (manual invocation, not a real hook) print a
+    # usage hint so the user knows how to test interactively.
+    if sys.stdin.isatty():
+        print(
+            "dispatch reads hook event JSON from stdin. "
+            "For manual testing use: speckit-gate dry-run <command>",
+            file=sys.stderr,
+        )
+        return 0
+
     payload_text = sys.stdin.read()
     try:
         payload = json.loads(payload_text) if payload_text.strip() else {}
@@ -234,6 +286,11 @@ def dispatch(phase: str, nodes_path: str | None = None) -> int:
 
     event = as_str(payload.get("hook_event_name"))
     if event not in ("UserPromptExpansion", "PreToolUse", "PostToolUse", "UserPromptSubmit"):
+        return 0
+
+    # Fast-path: exit immediately for non-speckit Skill/Agent invocations
+    # without performing any file I/O.
+    if _fast_path_exit(event, payload):
         return 0
 
     proj_root = resolve_project_root(payload)
