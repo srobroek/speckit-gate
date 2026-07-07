@@ -1,0 +1,81 @@
+# speckit-gate: extensions example
+#
+# THIS IS AN EXAMPLE FILE — NOT AN INSTALLABLE PRESET.
+# It documents common patterns for gating community/custom spec-kit extensions.
+#
+# Usage:
+#   Copy the entries you need into your project gates.yaml.
+#   Only include gates for commands that are actually installed in your project.
+#
+# Field reference:
+#   requires:    List of command names or artefact paths that must exist/have run
+#                before this command is allowed to start.
+#   produces:    Artefacts this command creates. Downstream commands list these
+#                in their requires to form the DAG edge.
+#   context:     Advisory text injected into the model's context window when the
+#                gate fires on harnesses that support advisory-only enforcement.
+#   spawn_agent: true — adds a PreToolUse:Agent gate (Claude Code only) in
+#                addition to the PreToolUse:Skill gate. Use for commands that
+#                spawn sub-agents; without this the agent-invocation path is
+#                ungated even if the skill-invocation path is blocked.
+#   deprecated:  true — gate emits a hard-deprecated block with an upgrade hint
+#                instead of the normal prerequisite block. The command is still
+#                gated, but the deny message tells users what to run instead.
+#
+# For the built-in command set see presets/core.gates.yaml.
+
+config:
+  prefix: speckit.
+  feature_root: specs
+  resolve: [git-branch, newest-dir]
+
+gates:
+
+  # --- Example 1: requires-chain gate (speckit-gate community extension)
+  # verify-tasks checks that tasks marked [X] are actually implemented.
+  # It requires tasks.md to exist (from the built-in tasks command) and
+  # chains off verify-report if you want strict ordering.
+  # The spawn_agent flag gates both /speckit.verify-tasks invocations AND
+  # agent-evoked verify-tasks sub-agent spawns.
+  verify-tasks:
+    requires: [tasks]
+    produces: [specs/<feat>/verify-tasks-report.md]
+    spawn_agent: true
+    context: >-
+      Detects phantom completions in a fresh context to avoid
+      confirmation bias. Requires tasks.md to exist.
+
+  # --- Example 2: spawn_agent gate (agent-assign community extension)
+  # agent-assign-execute spawns a sub-agent per task. The spawn_agent: true
+  # flag means speckit-gate installs BOTH a PreToolUse:Skill gate and a
+  # PreToolUse:Agent gate so the command cannot be evoked via either channel
+  # without prerequisites being satisfied.
+  agent-assign-execute:
+    requires: [agent-assign-assign, agent-assign-validate]
+    produces: [specs/<feat>/task-<n>.report.md]
+    spawn_agent: true
+    context: >-
+      Executes tasks by spawning the assigned agent for each task in its
+      own context. Replaces the deprecated /speckit.implement.
+
+  # --- Example 3: deprecated gate
+  # Mark a command deprecated to emit an upgrade hint instead of the normal
+  # prerequisite block. The gate still fires; users see the migration message.
+  fleet-review:
+    requires: [plan, tasks]
+    produces: []
+    deprecated: true
+    context: >-
+      Deprecated. Use /speckit.verify then /speckit.review-run instead.
+
+  # --- Example 4: produces-artefact gate (refine community extension)
+  # refine-propagate requires a diff artefact produced by a prior refine-update
+  # run. Gating on an artefact path (rather than a command name) lets you
+  # enforce ordering even when the upstream command itself is not gated.
+  refine-propagate:
+    requires: [specs/<feat>/refine-diff.md]
+    produces: []
+    context: >-
+      Pushes spec diff into plan, tasks, and issues. Review propagated
+      edits before accepting. Requires a refine-diff.md artefact from a
+      prior /speckit.refine-update run.

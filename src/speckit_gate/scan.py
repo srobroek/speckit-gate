@@ -57,8 +57,8 @@ def scan_project(root: str) -> list[str]:
                 data = json.load(fh)
             # If spec-kit is installed we can infer the core command set
             if isinstance(data, dict) and data.get("integration"):
-                from speckit_gate.known_gates import KNOWN_GATES
-                commands.update(KNOWN_GATES.keys())
+                from speckit_gate.known_gates import BUILTIN_COMMANDS
+                commands.update(BUILTIN_COMMANDS)
         except (OSError, ValueError):
             pass
 

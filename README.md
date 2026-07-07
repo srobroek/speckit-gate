@@ -181,15 +181,32 @@ gates:
 
 | Preset | Description |
 |--------|-------------|
-| `presets/core.gates.yaml` | All spec-kit built-in commands |
+| `presets/core.gates.yaml` | Spec-kit built-in commands only (`analyze`, `checklist`, `clarify`, `constitution`, `converge`, `implement`, `plan`, `specify`, `tasks`, `taskstoissues`). Safe to use on any spec-kit project. |
+| `presets/extensions.example.gates.yaml` | Example file showing how to gate community and custom extensions. Not an installable preset — copy individual entries into your `gates.yaml`. |
 
-Copy a preset as your starting `gates.yaml`:
+Copy the core preset as your starting `gates.yaml`:
 
 ```bash
-cp $(uvx speckit-gate --version && echo "") /dev/null  # just to confirm uvx works
 curl -sL https://raw.githubusercontent.com/srobroek/speckit-gate/main/presets/core.gates.yaml \
   > gates.yaml
 speckit-gate compile
+```
+
+### Extending for custom extensions
+
+If your project uses community extensions (e.g. `speckit.verify-tasks`,
+`speckit.agent-assign.*`, `speckit.refine.*`), add gates for them on top of
+the core preset.  See `presets/extensions.example.gates.yaml` for documented
+patterns covering:
+
+- **requires-chain** — sequencing a community command after a built-in artefact
+- **spawn_agent** — gating commands that spawn sub-agents via `PreToolUse:Agent`
+- **deprecated** — emitting an upgrade hint instead of a prerequisite block
+- **produces-artefact** — requiring a specific artefact path rather than a command name
+
+```bash
+# Copy entries you need from the example into your gates.yaml:
+curl -sL https://raw.githubusercontent.com/srobroek/speckit-gate/main/presets/extensions.example.gates.yaml
 ```
 
 ## Plain-python fallback

@@ -1,6 +1,10 @@
 # speckit-gate: core preset
-# spec-kit built-in commands only. No community extensions.
-# Generated from the spec-kit SDD workflow documentation.
+# Built-in spec-kit commands only — verified against upstream templates/commands/.
+# Built-in set (as of mid-2026): analyze, checklist, clarify, constitution,
+#   converge, implement, plan, specify, tasks, taskstoissues.
+#
+# Do NOT add community-extension commands here; users won't have them installed.
+# For extension gates see presets/extensions.example.gates.yaml.
 
 config:
   prefix: speckit.
@@ -15,6 +19,13 @@ config:
 gates:
 
   # --- spec phase ---
+
+  constitution:
+    requires: []
+    produces: [specs/<feat>/constitution.md]
+    context: >-
+      Create or update the project constitution. Establishes governance
+      principles before any feature spec is written.
 
   specify:
     requires: []
@@ -34,8 +45,8 @@ gates:
     produces: [specs/<feat>/plan.md]
     context: >-
       Decomposes spec into design and implementation plan. If plan.md
-      already exists use /speckit.refine.update to amend rather than
-      re-planning from scratch.
+      already exists use the refine path to amend rather than re-planning
+      from scratch.
 
   tasks:
     requires: [plan]
@@ -48,15 +59,8 @@ gates:
     requires: [specify, plan, tasks]
     produces: [specs/<feat>/checklist.md]
     context: >-
-      Requirements-quality gate over spec + plan + tasks before critique
-      and implementation.
-
-  critique-run:
-    requires: [plan, tasks]
-    produces: [specs/<feat>/critique-report.md]
-    context: >-
-      Dual-lens review (product strategy + engineering risk). Findings
-      triage into plan-edits vs. defer-to-tasks before moving on.
+      Requirements-quality gate over spec + plan + tasks before
+      implementation.
 
   analyze:
     requires: [tasks]
@@ -70,46 +74,14 @@ gates:
     context: >-
       Turns tasks into trackable GitHub issues.
 
-  checkpoint-commit:
-    requires: [specify]
-    produces: [git commit]
-    context: >-
-      Mid-cycle checkpoints lock in spec/plan/tasks before execution.
-      The final checkpoint locks in the verified, reviewed feature before
-      archive.
-
   # --- implementation phase ---
-
-  agent-assign-assign:
-    requires: [tasks]
-    produces: [specs/<feat>/agent-assignments.yml]
-    context: >-
-      Scans .claude/agents/ and ~/.claude/agents/ and matches tasks to
-      specialised sub-agents. Review the proposed assignments before
-      validate.
-
-  agent-assign-validate:
-    requires: [agent-assign-assign]
-    produces: []
-    context: >-
-      Validates that referenced agents actually exist, that every task
-      has an assignment, and that phase ordering is consistent.
-
-  agent-assign-execute:
-    requires: [agent-assign-assign, agent-assign-validate]
-    produces: [specs/<feat>/task-<n>.report.md]
-    spawn_agent: true
-    context: >-
-      Executes tasks by spawning the assigned agent for each task in its
-      own context (worktree isolation). Replaces the deprecated /speckit.implement.
 
   implement:
     requires: [tasks]
     produces: []
-    deprecated: true
     context: >-
-      Deprecated. Use /speckit.agent-assign.assign → validate → execute
-      instead.
+      Executes the implementation plan by processing and executing all
+      tasks defined in tasks.md.
 
   converge:
     requires: [specify, plan, tasks]
@@ -117,116 +89,3 @@ gates:
     context: >-
       Closes the gap between spec/plan/tasks intent and what the code
       actually implements. APPEND-ONLY to tasks.md.
-
-  # --- post-implementation ---
-
-  verify-tasks:
-    requires: [tasks]
-    produces: [specs/<feat>/verify-tasks-report.md]
-    spawn_agent: true
-    context: >-
-      Detects phantom completions in a fresh context to avoid
-      confirmation bias.
-
-  verify:
-    requires: [plan]
-    produces: [specs/<feat>/verify-report.md]
-    spawn_agent: true
-    context: >-
-      Validates implementation against the plan. If the diff does not
-      address the plan route back to agent-assign or refine.update.
-
-  review-run:
-    requires: [verify]
-    produces: [specs/<feat>/review-report.md]
-    context: >-
-      Orchestrates the granular review.{code,comments,tests,errors,
-      types,simplify} variants. Findings feed fix-findings.
-
-  qa-run:
-    requires: [review-run]
-    produces: [specs/<feat>/qa-report.md]
-    context: >-
-      Systematic QA: browser-driven or CLI-based acceptance validation.
-      Heavier than verify; reserved for features needing real-world
-      exercise.
-
-  sync-conflicts:
-    requires: [specs/<feat>/sync-report.md]
-    produces: []
-    context: >-
-      Surfaces contradictions between specs or shared interfaces.
-      Read-only.
-
-  archive:
-    requires: [specs/<feat>/verify-report.md, specs/<feat>/review-report.md]
-    produces: [specs/archived/<feat>/]
-    context: >-
-      Terminal step. Moves specs/<feat>/ to specs/archived/<feat>/.
-      Do not archive features with unresolved findings.
-
-  # --- refine loop ---
-
-  refine-update:
-    requires: [specify]
-    produces: []
-    context: >-
-      Incremental edits to existing artefacts. For scope pivots use
-      /speckit.iterate.define.
-
-  refine-propagate:
-    requires: [specs/<feat>/refine-diff.md]
-    produces: []
-    context: >-
-      Pushes spec diff into plan, tasks, and issues. Review propagated
-      edits before accepting.
-
-  # --- iterate loop ---
-
-  iterate-define:
-    requires: [specify]
-    produces: [specs/<feat>/pending-iteration.md]
-    context: >-
-      Scope / intent pivots. Distinct from refine (incremental edits).
-
-  iterate-apply:
-    requires: [specs/<feat>/pending-iteration.md]
-    produces: []
-    context: >-
-      Applies the iteration intent to spec + plan + tasks.
-
-  # --- bugfix sub-cycle ---
-
-  bugfix-verify:
-    requires: [specs/<feat>/bug-*.md]
-    produces: []
-    context: >-
-      Reproduce the bug with a failing test before patching.
-
-  bugfix-patch:
-    requires: [bugfix-verify]
-    produces: []
-    context: >-
-      Apply the fix; rerun the failing test to confirm.
-
-  # --- tinyspec sub-cycle ---
-
-  tinyspec-tinyspec:
-    requires: []
-    produces: [specs/<feat>/tinyspec.md]
-    context: >-
-      Lightweight spec for small, self-contained changes.
-
-  tinyspec-implement:
-    requires: [specs/<feat>/tinyspec.md]
-    produces: []
-    context: >-
-      Implements a small change directly from its tinyspec file.
-
-  # --- fleet orchestration ---
-
-  fleet-review:
-    requires: [specs/<feat>/fleet-state.md]
-    produces: []
-    context: >-
-      Cross-model evaluation of plan.md and tasks.md.

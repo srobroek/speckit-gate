@@ -7,19 +7,47 @@ normalized form (hyphens, no 'speckit.' prefix).
 Format:
     {cmd: {"requires": [cmd, ...], "produces": [artefact, ...], "context": str}}
 
-The values here match the locked srobroek-full preset DAG (ported from the
-28-node speckit-dag-hooks nodes.json).  Community extensions or new spec-kit
+KNOWN_GATES covers both spec-kit built-ins and common community extensions so
+that scan/propose/interview can offer pre-filled prerequisite suggestions when
+those commands ARE detected in a project.  Community extensions or new spec-kit
 commands that are not listed here are treated as unknown by the scan/propose
 step; the init interview asks about them individually.
+
+BUILTIN_COMMANDS is the canonical set of commands that ship with spec-kit
+itself (verified against upstream templates/commands/).  It is used by
+scan_project to seed the command list when a project has spec-kit installed
+but no skills referencing individual commands explicitly.  Only built-ins
+are seeded on that path; community extensions must be detected in skill files.
 """
 
 from __future__ import annotations
+
+# ---------------------------------------------------------------------------
+# Verified spec-kit built-in command names (upstream templates/commands/)
+# ---------------------------------------------------------------------------
+BUILTIN_COMMANDS: frozenset[str] = frozenset({
+    "analyze",
+    "checklist",
+    "clarify",
+    "constitution",
+    "converge",
+    "implement",
+    "plan",
+    "specify",
+    "tasks",
+    "taskstoissues",
+})
 
 # ---------------------------------------------------------------------------
 # Core spec-kit commands
 # ---------------------------------------------------------------------------
 KNOWN_GATES: dict[str, dict] = {
     # --- spec phase ---
+    "constitution": {
+        "requires": [],
+        "produces": ["specs/<feat>/constitution.md"],
+        "context": "Create or update the project constitution.",
+    },
     "specify": {
         "requires": [],
         "produces": ["specs/<feat>/spec.md"],
@@ -85,8 +113,7 @@ KNOWN_GATES: dict[str, dict] = {
     "implement": {
         "requires": ["tasks"],
         "produces": [],
-        "deprecated": True,
-        "context": "Deprecated. Use agent-assign.assign/validate/execute.",
+        "context": "Executes the implementation plan by processing all tasks.",
     },
     "converge": {
         "requires": ["specify", "plan", "tasks"],

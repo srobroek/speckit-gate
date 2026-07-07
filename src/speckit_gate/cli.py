@@ -142,7 +142,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
 
 
 def _write_default_gates_yaml(root: str, proposal: dict) -> None:
-    from speckit_gate.known_gates import KNOWN_GATES
+    from speckit_gate.known_gates import KNOWN_GATES, BUILTIN_COMMANDS
     os.makedirs(root, exist_ok=True)
     out_path = os.path.join(root, "gates.yaml")
     lines = [
@@ -164,6 +164,13 @@ def _write_default_gates_yaml(root: str, proposal: dict) -> None:
     # Add unknowns with empty stubs
     for cmd in proposal["unknown"]:
         all_cmds[cmd] = {"requires": [], "produces": [], "context": "TODO: define prerequisites"}
+
+    # If scan found nothing, fall back to the spec-kit built-in set so the
+    # resulting gates.yaml is not empty and immediately useful.
+    if not all_cmds:
+        for cmd in sorted(BUILTIN_COMMANDS):
+            if cmd in KNOWN_GATES:
+                all_cmds[cmd] = dict(KNOWN_GATES[cmd])
 
     for cmd in sorted(all_cmds):
         info = all_cmds[cmd]

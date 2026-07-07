@@ -1,9 +1,10 @@
 """Golden compile tests.
 
-1. Both presets (core.gates.yaml, srobroek-full.gates.yaml) compile clean.
-2. Fixture gates.yaml compiles to expected node structure.
-3. compile --check detects drift.
-4. Preset validity: nodes in presets are structurally valid (pre+post present).
+1. core.gates.yaml (built-ins only) compiles clean.
+2. extensions.example.gates.yaml parses and compiles clean.
+3. Fixture gates.yaml compiles to expected node structure.
+4. compile --check detects drift.
+5. Preset validity: nodes in presets are structurally valid (pre+post present).
 """
 
 from __future__ import annotations
@@ -32,42 +33,74 @@ def test_core_preset_compiles_clean():
     nodes, cfg, warnings = _compile(path)
     assert isinstance(nodes, dict)
     assert len(nodes) > 0, "core preset produced zero nodes"
-    # spawn_agent warnings are expected; no assertion errors
-    for cmd in ("specify", "plan", "tasks", "verify", "verify-tasks"):
+    # All 10 spec-kit built-in commands must compile to nodes
+    for cmd in ("specify", "plan", "tasks", "implement", "converge"):
         assert cmd in nodes, f"expected node '{cmd}' in core preset"
 
 
-def test_core_preset_has_expected_nodes():
-    """core preset must cover all built-in spec-kit commands."""
+def test_core_preset_contains_only_builtins():
+    """core preset must contain exactly the verified spec-kit built-in commands.
+
+    Built-in set verified against upstream templates/commands/ (mid-2026):
+    analyze, checklist, clarify, constitution, converge, implement, plan,
+    specify, tasks, taskstoissues.
+    No community-extension commands are allowed in this preset.
+    """
+    from speckit_gate.known_gates import BUILTIN_COMMANDS
     path = os.path.join(PRESETS_DIR, "core.gates.yaml")
     nodes, cfg, warnings = _compile(path)
-    expected_nodes = {
-        "specify", "clarify", "plan", "tasks", "checklist", "critique-run",
-        "analyze", "taskstoissues", "checkpoint-commit",
-        "agent-assign-assign", "agent-assign-validate", "agent-assign-execute",
-        "implement", "converge",
-        "verify-tasks", "verify", "review-run", "qa-run", "sync-conflicts", "archive",
-        "refine-update", "refine-propagate",
-        "iterate-define", "iterate-apply",
-        "bugfix-verify", "bugfix-patch",
-        "tinyspec-tinyspec", "tinyspec-implement",
-        "fleet-review",
-    }
-    missing = expected_nodes - set(nodes.keys())
-    assert not missing, f"core preset missing nodes: {sorted(missing)}"
+    extra = set(nodes.keys()) - BUILTIN_COMMANDS
+    assert not extra, (
+        f"core preset contains non-built-in commands: {sorted(extra)}\n"
+        "Remove community-extension commands from core.gates.yaml.\n"
+        "See presets/extensions.example.gates.yaml for the extension pattern."
+    )
+    missing = BUILTIN_COMMANDS - set(nodes.keys())
+    assert not missing, f"core preset is missing built-in commands: {sorted(missing)}"
 
 
-def test_core_preset_spawn_agent_nodes():
-    """verify, verify-tasks, and agent-assign-execute have spawn_agent: true."""
+def test_extensions_example_preset_parses_and_compiles_clean():
+    """extensions.example.gates.yaml must parse and compile without errors."""
+    path = os.path.join(PRESETS_DIR, "extensions.example.gates.yaml")
+    assert os.path.isfile(path), f"extensions.example.gates.yaml not found at {path}"
+    nodes, cfg, warnings = _compile(path)
+    assert isinstance(nodes, dict)
+    assert len(nodes) > 0, "extensions example preset produced zero nodes"
+    # The example must include at least one spawn_agent gate and one deprecated gate
     from speckit_gate._yaml import load_yaml
-    path = os.path.join(PRESETS_DIR, "core.gates.yaml")
     with open(path) as fh:
         raw = load_yaml(fh.read())
     gates = raw.get("gates", {})
-    for cmd in ("verify", "verify-tasks", "agent-assign-execute"):
-        assert gates.get(cmd, {}).get("spawn_agent") is True, (
-            f"expected spawn_agent: true on '{cmd}' in core preset"
-        )
+    has_spawn = any(g.get("spawn_agent") for g in gates.values())
+    has_deprecated = any(g.get("deprecated") for g in gates.values())
+    assert has_spawn, "extensions example must include at least one spawn_agent: true entry"
+    assert has_deprecated, "extensions example must include at least one deprecated: true entry"
+
+
+def test_extensions_example_schema_conformance():
+    """extensions.example.gates.yaml must conform to the gates schema."""
+    from speckit_gate._yaml import load_yaml
+    import json as _json
+
+    path = os.path.join(PRESETS_DIR, "extensions.example.gates.yaml")
+    with open(path) as fh:
+        doc = load_yaml(fh.read())
+
+    # Inline the same validation logic from test_schema_conformance
+    allowed_gate_keys = {"requires", "produces", "deprecated", "spawn_agent", "context"}
+    errors = []
+    for cmd, gate in (doc.get("gates") or {}).items():
+        if not isinstance(gate, dict):
+            errors.append(f"gates.{cmd}: must be a mapping")
+            continue
+        extra = set(gate.keys()) - allowed_gate_keys
+        if extra:
+            errors.append(f"gates.{cmd}: unexpected keys: {sorted(extra)}")
+        for field in ("deprecated", "spawn_agent"):
+            val = gate.get(field)
+            if val is not None and not isinstance(val, bool):
+                errors.append(f"gates.{cmd}.{field}: must be boolean")
+    assert not errors, "extensions.example.gates.yaml schema violations:\n" + "\n".join(errors)
 
 
 # ---------------------------------------------------------------------------
