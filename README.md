@@ -109,7 +109,6 @@ matrix is per-channel. All deny rows below are verified against harness source
 | Codex CLI | **deny** — `UserPromptSubmit` (raw human text; text-match, no command structure; requires `[features] hooks = true`) | **none** — skills inject as context with no event; `SubagentStart` is metadata-only (`continue:false` at best). Artifact gates are the backstop | shipped |
 | Gemini CLI | **deny** — `BeforeAgent` (expanded template text only — no command name, no slash-origin marker; content-match required) | **n/a** — model cannot invoke `.toml` commands by design | planned |
 | Mistral Vibe | **none** — slash/skill input expands in the UI layer, invisible to hooks | **deny** — `before_tool` on the `skill` tool (sees skill name; flag: `enable_experimental_hooks`). Note: skill loads bypass Vibe's user-approval prompt, so this hook is the only programmatic gate | planned |
-| Amp | observe-only — `agent.start` sees prompt text but cannot block | **deny** — `tool.call` verdicts on subagent/delegation tools (skill-load visibility unverified). Note: spec-kit ≤0.12.4 renders Amp commands to `.agents/commands/`, removed by Amp 2026-01 — its Amp integration is currently broken upstream | — |
 | GitHub Copilot | hooks exist; deny semantics unverified | unverified | — |
 | Cursor, Zed, Cline, Goose, Devin, Trae, Lingma, Kimi, ZCode, Firebender, Junie, Auggie, + ~14 more | static context only — no hook system | static context only | spec-kit bundle (advisory text) |
 
