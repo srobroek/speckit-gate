@@ -101,12 +101,13 @@ def _cmd_propose(args: argparse.Namespace) -> int:
     from speckit_gate.scan import scan_project
     from speckit_gate.propose import propose, format_proposal_table
     root = args.root or os.getcwd()
+    fmt = getattr(args, "format", "aligned") or "aligned"
     commands = scan_project(root)
     if not commands:
         print("No spec-kit commands found.")
         return 0
     proposal = propose(commands)
-    print(format_proposal_table(proposal))
+    print(format_proposal_table(proposal, fmt=fmt))
     return 0
 
 
@@ -118,14 +119,24 @@ def _cmd_init(args: argparse.Namespace) -> int:
     commands = scan_project(root)
     proposal = propose(commands)
 
+    _NEXT_STEPS = (
+        "\nNext steps:\n"
+        "  speckit-gate compile        "
+        "# compile gates.yaml → .specify/gates/nodes.json\n"
+        "  speckit-gate install --harness claude   "
+        "# install hooks into .claude/settings.json"
+    )
+
     if args.defaults:
         _write_default_gates_yaml(root, proposal)
         print("Wrote gates.yaml with defaults.")
+        print(_NEXT_STEPS, file=sys.stderr)
         return 0
 
     if args.answers:
         _write_gates_yaml_from_answers(root, args.answers)
         print("Wrote gates.yaml from answers file.")
+        print(_NEXT_STEPS, file=sys.stderr)
         return 0
 
     # --interactive: print the table and a note for agent-driven use
@@ -138,6 +149,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
         )
     _write_default_gates_yaml(root, proposal)
     print("\nWrote initial gates.yaml — review and adjust requires/produces.")
+    print(_NEXT_STEPS, file=sys.stderr)
     return 0
 
 
@@ -272,6 +284,24 @@ def _cmd_compile(args: argparse.Namespace) -> int:
         json.dump(output, fh, indent=2, sort_keys=True)
         fh.write("\n")
     print(f"Compiled {len(nodes)} gates → {nodes_path}")
+
+    # Hint: if .claude/settings.json doesn't contain the dispatch command yet,
+    # remind the user to wire hooks.
+    settings_path = os.path.join(root, ".claude", "settings.json")
+    _hint_install = True
+    if os.path.isfile(settings_path):
+        try:
+            with open(settings_path, "r", encoding="utf-8") as fh:
+                settings_text = fh.read()
+            if "speckit-gate" in settings_text or "dispatch" in settings_text:
+                _hint_install = False
+        except OSError:
+            pass
+    if _hint_install:
+        print(
+            "Hint: run 'speckit-gate install --harness claude' to wire hooks.",
+            file=sys.stderr,
+        )
     return 0
 
 
@@ -397,26 +427,41 @@ def _cmd_dry_run(args: argparse.Namespace) -> int:
     from speckit_gate.dispatch import dispatch as _dispatch
     import io
 
-    event = args.event or "UserPromptSubmit"
     command = args.command or ""
+    if not command:
+        print(
+            "error: command argument required (e.g. 'speckit-gate dry-run speckit.plan')",
+            file=sys.stderr,
+        )
+        return 1
+
+    event = args.event or "UserPromptSubmit"
     root = args.root or os.getcwd()
+    phase = args.phase or "pre"
+    nodes_path = args.nodes or os.path.join(root, ".specify", "gates", "nodes.json")
+
+    # Validate nodes.json exists before attempting dispatch
+    if not os.path.isfile(nodes_path):
+        print(
+            "error: gates not compiled — run 'speckit-gate compile' first",
+            file=sys.stderr,
+        )
+        return 1
 
     payload = {
         "hook_event_name": event,
         "command_name": command,
         "cwd": root,
         "tool_input": {"skill": command},
+        "prompt": f"/{command}",
     }
-
-    phase = args.phase or "pre"
-    nodes_path = args.nodes or os.path.join(root, ".specify", "gates", "nodes.json")
 
     old_stdin = sys.stdin
     old_stdout = sys.stdout
     sys.stdin = io.StringIO(json.dumps(payload))
     sys.stdout = io.StringIO()
     try:
-        _dispatch(phase, nodes_path if os.path.isfile(nodes_path) else None)
+        _dispatch(phase, nodes_path)
         output = sys.stdout.getvalue()
     finally:
         sys.stdin = old_stdin
@@ -429,7 +474,10 @@ def _cmd_dry_run(args: argparse.Namespace) -> int:
         except ValueError:
             print(output)
     else:
-        print("(no gate fired — command not found in nodes.json)")
+        print(
+            f"(no gate — '{command}' is not a gated command; "
+            "run 'speckit-gate explain ...' to check)"
+        )
     return 0
 
 
@@ -456,6 +504,13 @@ def main(argv: list[str] | None = None) -> int:
     # propose
     p = sub.add_parser("propose", help="Show prerequisite proposal table")
     p.add_argument("--root", help="Project root (default: cwd)")
+    p.add_argument(
+        "--format",
+        choices=["aligned", "md"],
+        default="aligned",
+        dest="format",
+        help="Output format: aligned (default, terminal-friendly) or md (markdown table)",
+    )
 
     # init
     p = sub.add_parser("init", help="Initialise gates.yaml")
