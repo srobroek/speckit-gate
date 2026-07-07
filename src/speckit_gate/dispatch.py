@@ -73,7 +73,11 @@ def _resolve_command(event: str, payload: dict, prefix: str = "speckit.") -> str
         if not isinstance(tool_input, dict):
             tool_input = {}
         # Check for agent-type spawn events
-        agent_type = as_str(tool_input.get("agent_type") or tool_input.get("agentType"))
+        agent_type = as_str(
+            tool_input.get("subagent_type")  # Claude Code Agent tool field
+            or tool_input.get("agent_type")
+            or tool_input.get("agentType")
+        )
         if agent_type:
             return "agent:" + agent_type
         cmd = as_str(tool_input.get("skill")) or as_str(tool_input.get("command_name"))
@@ -106,6 +110,15 @@ def _resolve_node_id(node_id: str, nodes: dict) -> str:
     """Exact match first; then strip trailing segments until a node matches."""
     if node_id in nodes:
         return node_id
+    # agent:<type> spawns gate on the workflow node the agent executes:
+    # agent:speckit-verify → verify. Unprefixed agent types stay unmatched —
+    # non-speckit agents must not be gated.
+    if node_id.startswith("agent:"):
+        agent_type = node_id[len("agent:"):]
+        for pre in ("speckit-", "speckit."):
+            if agent_type.startswith(pre):
+                return _resolve_node_id(agent_type[len(pre):].replace(".", "-"), nodes)
+        return ""
     parts = node_id.split("-")
     while len(parts) > 1:
         parts.pop()

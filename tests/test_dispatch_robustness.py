@@ -208,3 +208,31 @@ def test_dispatch_missing_nodes_json_is_silent_noop(monkeypatch, tmp_path):
     )
     assert rc == 0
     assert output == ""
+
+
+# ---------------------------------------------------------------------------
+# Agent-spawn channel: subagent_type extraction and agent:* node resolution
+# ---------------------------------------------------------------------------
+def test_resolve_command_subagent_type_claude_field():
+    assert (
+        _resolve_command(
+            "PreToolUse", {"tool_input": {"subagent_type": "speckit-verify"}}
+        )
+        == "agent:speckit-verify"
+    )
+
+
+def test_resolve_node_id_agent_prefix_maps_to_workflow_node():
+    from speckit_gate.dispatch import _resolve_node_id
+
+    nodes = {"verify": {}, "implement": {}}
+    assert _resolve_node_id("agent:speckit-verify", nodes) == "verify"
+    assert _resolve_node_id("agent:speckit.verify", nodes) == "verify"
+
+
+def test_resolve_node_id_non_speckit_agent_is_not_gated():
+    from speckit_gate.dispatch import _resolve_node_id
+
+    nodes = {"verify": {}, "implement": {}}
+    assert _resolve_node_id("agent:coder", nodes) == ""
+    assert _resolve_node_id("agent:general-purpose", nodes) == ""
