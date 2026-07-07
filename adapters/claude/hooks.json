@@ -1,12 +1,12 @@
 {
   "hooks": {
-    "UserPromptExpansion": [
+    "UserPromptSubmit": [
       {
         "matcher": "speckit.*",
         "hooks": [
           {
             "type": "command",
-            "command": "uvx speckit-gate dispatch pre",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
             "timeout": 5,
             "statusMessage": "Checking spec-kit gate preconditions..."
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx speckit-gate dispatch pre",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
             "timeout": 5,
             "statusMessage": "Checking spec-kit gate preconditions (Skill)..."
           }
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx speckit-gate dispatch pre",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
             "timeout": 5,
             "statusMessage": "Checking spec-kit gate preconditions (Agent spawn)..."
           }
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx speckit-gate dispatch post",
+            "command": "{SPECKIT_GATE_CMD} dispatch post",
             "timeout": 5,
             "statusMessage": "Loading spec-kit next-step context..."
           }

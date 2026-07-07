@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx speckit-gate dispatch pre",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
             "timeout": 5
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx speckit-gate dispatch pre",
+            "command": "{SPECKIT_GATE_CMD} dispatch pre",
             "timeout": 5
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx speckit-gate dispatch post",
+            "command": "{SPECKIT_GATE_CMD} dispatch post",
             "timeout": 5
           }
         ]
