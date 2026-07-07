@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/srobroek/speckit-gate/compare/speckit-gate-v0.2.0...speckit-gate-v0.2.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* **scan:** discover directory-layout skills and extension commands ([fac312f](https://github.com/srobroek/speckit-gate/commit/fac312f4fdd89e64c0eaff2916e2a790b4fec4e8))
+
 ## [0.2.0](https://github.com/srobroek/speckit-gate/compare/speckit-gate-v0.1.0...speckit-gate-v0.2.0) (2026-07-07)
 
 

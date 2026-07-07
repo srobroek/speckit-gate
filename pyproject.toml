@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "speckit-gate"
-version = "0.2.0"
+version = "0.2.1"
 description = "Generated, harness-agnostic workflow gates for spec-kit projects"
 readme = "README.md"
 license = { text = "Apache-2.0" }
